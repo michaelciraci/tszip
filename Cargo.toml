@@ -1,6 +1,6 @@
 [package]
 name = "tszip"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Michael Ciraci"]
 description = "Simple command line utility for quickly compressing and decompressing a directory through tar and snap compression"
 license = "BSD-3-Clause"

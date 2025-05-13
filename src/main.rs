@@ -4,6 +4,7 @@ use clap::Parser;
 use tar::Archive;
 
 #[derive(Debug, Parser)]
+#[command(version, about, long_about = None)]
 struct Args {
     /// Path to compress or decompress
     path: PathBuf,
@@ -16,6 +17,9 @@ struct Args {
     #[arg(long, short)]
     /// Force (de)compression if the output already exists
     force: bool,
+    #[arg(long, short)]
+    /// Follow hard links; archive and dump the files they refer to
+    symbolic_follow: bool,
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -43,9 +47,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         let output_file = File::create(output).unwrap();
 
         let enc = snap::write::FrameEncoder::new(output_file);
-
         let mut tar = tar::Builder::new(enc);
-
+        tar.follow_symlinks(args.symbolic_follow);
         tar.append_dir_all("", &args.path)?;
 
         if !args.keep {
