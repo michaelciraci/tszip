@@ -1,4 +1,8 @@
-use std::{error::Error, fs::File, path::PathBuf};
+use std::{
+    error::Error,
+    fs::{remove_dir_all, File},
+    path::PathBuf,
+};
 
 use clap::Parser;
 use tar::Archive;
@@ -25,36 +29,29 @@ struct Args {
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
+    let mut output = args.path.clone();
+    output.set_extension("");
+    if output.exists() && !args.force {
+        return Err("Output already exists. Use -f to force".into());
+    }
+
     if args.decompress {
-        let mut output = args.path.clone();
-        output.set_extension("");
-        if output.exists() && !args.force {
-            return Err("Output already exists. Use -f to force".into());
-        }
         let output_dir = output.file_stem().unwrap();
         let output_file = File::open(&args.path)?;
 
         let dec = snap::read::FrameDecoder::new(output_file);
-        let mut archive = Archive::new(dec);
-        archive.unpack(output_dir)?;
-        std::fs::remove_file(args.path)?;
+        Archive::new(dec).unpack(output_dir)?;
     } else {
-        let mut output = args.path.clone();
-        output.set_extension("tszip");
-        if output.exists() && !args.force {
-            return Err("Output already exists. Use -f to force".into());
-        }
-        let output_file = File::create(output).unwrap();
+        let output_file = File::create(output)?;
 
         let enc = snap::write::FrameEncoder::new(output_file);
         let mut tar = tar::Builder::new(enc);
         tar.follow_symlinks(args.symbolic_follow);
         tar.append_dir_all("", &args.path)?;
-
-        if !args.keep {
-            std::fs::remove_dir_all(args.path)?;
-        }
     }
 
-    Ok(())
+    match args.keep {
+        true => Ok(()),
+        false => Ok(remove_dir_all(args.path)?),
+    }
 }
