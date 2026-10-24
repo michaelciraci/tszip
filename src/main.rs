@@ -1,6 +1,6 @@
 use std::{
     error::Error,
-    fs::{remove_dir_all, File},
+    fs::{File, remove_dir_all},
     path::PathBuf,
 };
 
